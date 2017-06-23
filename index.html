@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>Document</title>
+<style>
+.color-1 path { fill: rgba(236, 99, 99, 1); stroke-width: 0; }
+.color-2 path { fill: rgba(193, 105, 105, 1); stroke-width: 0; }
+.color-3 path { fill: rgba(111, 105, 193, 1); stroke-width: 0; }
+.color-4 path { fill: rgba(124, 185, 105, 1); stroke-width: 0; }
+.color-5 path { fill: rgba(182, 181, 92, 1); stroke-width: 0; }
+.color-6 path { fill: rgba(177, 105, 193, 1); stroke-width: 0; }
+.color-7 path { fill: rgba(105, 193, 188, 1); stroke-width: 0; }
+.color-8 path { fill: rgba(224, 132, 65, 1); stroke-width: 0; }
+.color-9 path { fill: rgba(222, 113, 180, 1); stroke-width: 0; }
+.color-10 path { fill: rgba(224, 181, 33, 1); stroke-width: 0; }
+.color-1.opacity path { fill: rgba(236, 99, 99, 0.5); stroke-width: 0; }
+.color-2.opacity path { fill: rgba(193, 105, 105, 0.5); stroke-width: 0; }
+.color-3.opacity path { fill: rgba(111, 105, 193, 0.5); stroke-width: 0; }
+.color-4.opacity path { fill: rgba(124, 185, 105, 0.5); stroke-width: 0; }
+.color-5.opacity path { fill: rgba(182, 181, 92, 0.5); stroke-width: 0; }
+.color-6.opacity path { fill: rgba(177, 105, 193, 0.5); stroke-width: 0; }
+.color-7.opacity path { fill: rgba(105, 193, 188, 0.5); stroke-width: 0; }
+.color-8.opacity path { fill: rgba(224, 132, 65, 0.5); stroke-width: 0; }
+.color-9.opacity path { fill: rgba(222, 113, 180, 0.5); stroke-width: 0; }
+.color-10.opacity path { fill: rgba(224, 181, 33, 0.5); stroke-width: 0; }
+.color-1.opacity.stroke path { fill: rgba(236, 99, 99, 0.5); stroke-width: 1; stroke: #333; }
+.color-2.opacity.stroke path { fill: rgba(193, 105, 105, 0.5); stroke-width: 1; stroke: #333; }
+.color-3.opacity.stroke path { fill: rgba(111, 105, 193, 0.5); stroke-width: 1; stroke: #333; }
+.color-4.opacity.stroke path { fill: rgba(124, 185, 105, 0.5); stroke-width: 1; stroke: #333; }
+.color-5.opacity.stroke path { fill: rgba(182, 181, 92, 0.5); stroke-width: 1; stroke: #333; }
+.color-6.opacity.stroke path { fill: rgba(177, 105, 193, 0.5); stroke-width: 1; stroke: #333; }
+.color-7.opacity.stroke path { fill: rgba(105, 193, 188, 0.5); stroke-width: 1; stroke: #333; }
+.color-8.opacity.stroke path { fill: rgba(224, 132, 65, 0.5); stroke-width: 1; stroke: #333; }
+.color-9.opacity.stroke path { fill: rgba(222, 113, 180, 0.5); stroke-width: 1; stroke: #333; }
+.color-10.opacity.stroke path { fill: rgba(224, 181, 33, 0.5); stroke-width: 1; stroke: #333; }
+.highcharts-data-label span {
+  text-align: center;
+}
+.checkbox-container { display: none; }
+.checkbox-container.active { display: block; }
+</style>
+</head>
+<body>
+
+<button id="btn">適用</button>
+
+<div class="checkbox-container">
+  <h2>対象データ選択</h2>
+  <label><input class="data-type" type="checkbox" value="target" checked>対象データ</label>
+  <label><input class="data-type" type="checkbox" value="comparison" checked>比較データ</label>
+  <label><input class="data-type" type="checkbox" value="goal" checked>目標データ</label>
+
+  <h2>区分</h2>
+  <label><input class="division" type="checkbox" value="active" checked>現役</label>
+  <label><input class="division" type="checkbox" value="withdrawal" checked>離脱</label>
+
+  <h2>ランク</h2>
+  <label><input class="rank" type="checkbox" value="first" checked>初回</label>
+  <label><input class="rank" type="checkbox" value="little" checked>よちよち</label>
+  <label><input class="rank" type="checkbox" value="drudgery" checked>こつこつ</label>
+  <label><input class="rank" type="checkbox" value="trend" checked>流行</label>
+  <label><input class="rank" type="checkbox" value="excellent" checked>優良</label>
+</div>
+
+<div id="container" style="height: 700px"></div>
+
+<script src="./highcharts.js"></script>
+<script src="./highcharts-more.js"></script>
+<script>
+(function() {
+  'use strict';
+
+  var highcharts;
+
+  var data_types = document.querySelectorAll('.data-type');
+  var divisions = document.querySelectorAll('.division');
+  var ranks = document.querySelectorAll('.rank');
+
+  // データ構造
+  // {
+  //   x                 : 150,         # 在籍期間
+  //   y                 : 45000000,    # 購入金額
+  //   z                 : 50,          # 人数
+  //   data_type         : 'target',    # 対象: target, 比較: comparison, 目標: goal
+  //   division          : 'active',    # 現役: active, 離脱: withdrawal
+  //   rank              : 'first',     # 初回: first, よちよち: little, こつこつ: drudgery, 流行: trend, 優良: excellent
+  //   date              : '2017年6月', # 期間
+  //   y_average         : 900000,      # 在籍期間(平均)
+  //   withdrawal_period : 30           # 離脱期間(平均)
+  // }
+  var all_series = [
+      // 対象データ -------------------------------------------------------------
+      {
+        className: 'color-1',
+        data: [
+          {
+            x                 : 150,
+            y                 : 45000000,
+            z                 : 200,
+            data_type         : 'target',
+            division          : 'active',
+            rank              : 'first',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '現役<br>初回';
+          }
+        }
+      },
+      {
+        className: 'color-2',
+        data: [
+          {
+            x                 : 200,
+            y                 : 50000000,
+            z                 : 180,
+            data_type         : 'target',
+            division          : 'active',
+            rank              : 'little',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '現役<br>よちよち';
+          }
+        }
+      },
+      {
+        className: 'color-3',
+        data: [
+          {
+            x                 : 100,
+            y                 : 10000000,
+            z                 : 30,
+            data_type         : 'target',
+            division          : 'active',
+            rank              : 'drudgery',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '現役<br>こつこつ';
+          }
+        }
+      },
+      {
+        className: 'color-4',
+        data: [
+          {
+            x                 : 80,
+            y                 : 20000000,
+            z                 : 200,
+            data_type         : 'target',
+            division          : 'active',
+            rank              : 'trend',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '現役<br>流行';
+          }
+        }
+      },
+      {
+        className: 'color-5',
+        data: [
+          {
+            x                 : 100,
+            y                 : 30000000,
+            z                 : 10,
+            data_type         : 'target',
+            division          : 'active',
+            rank              : 'excellent',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '現役<br>優良';
+          }
+        }
+      },
+      {
+        className: 'color-6',
+        data: [
+          {
+            x                 : 50,
+            y                 : 30000000,
+            z                 : 45,
+            data_type         : 'target',
+            division          : 'withdrawal',
+            rank              : 'first',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '離脱<br>初回';
+          }
+        }
+      },
+      {
+        className: 'color-7',
+        data: [
+          {
+            x                 : 10,
+            y                 : 40000000,
+            z                 : 70,
+            data_type         : 'target',
+            division          : 'withdrawal',
+            rank              : 'little',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '離脱<br>よちよち';
+          }
+        }
+      },
+      {
+        className: 'color-8',
+        data: [
+          {
+            x                 : 180,
+            y                 : 48000000,
+            z                 : 90,
+            data_type         : 'target',
+            division          : 'withdrawal',
+            rank              : 'drudgery',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '離脱<br>こつこつ';
+          }
+        }
+      },
+      {
+        className: 'color-9',
+        data: [
+          {
+            x                 : 250,
+            y                 : 25000000,
+            z                 : 110,
+            data_type         : 'target',
+            division          : 'withdrawal',
+            rank              : 'trend',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '離脱<br>流行';
+          }
+        }
+      },
+      {
+        className: 'color-10',
+        data: [
+          {
+            x                 : 210,
+            y                 : 10000000,
+            z                 : 120,
+            data_type         : 'target',
+            division          : 'withdrawal',
+            rank              : 'excellent',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '離脱<br>優良';
+          }
+        }
+      },
+
+      // 比較データ -------------------------------------------------------------
+      {
+        className: 'color-1 opacity',
+        data: [
+          {
+            x                 : 90,
+            y                 : 30000000,
+            z                 : 130,
+            data_type         : 'comparison',
+            division          : 'active',
+            rank              : 'first',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '現役<br>初回';
+          }
+        }
+      },
+      {
+        className: 'color-2 opacity',
+        data: [
+          {
+            x                 : 100,
+            y                 : 44000000,
+            z                 : 100,
+            data_type         : 'comparison',
+            division          : 'active',
+            rank              : 'little',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '現役<br>よちよち';
+          }
+        }
+      },
+      {
+        className: 'color-3 opacity',
+        data: [
+          {
+            x                 : 20,
+            y                 : 20000000,
+            z                 : 120,
+            data_type         : 'comparison',
+            division          : 'active',
+            rank              : 'drudgery',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '現役<br>こつこつ';
+          }
+        }
+      },
+      {
+        className: 'color-4 opacity',
+        data: [
+          {
+            x                 : 100,
+            y                 : 30000000,
+            z                 : 100,
+            data_type         : 'comparison',
+            division          : 'active',
+            rank              : 'trend',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '現役<br>流行';
+          }
+        }
+      },
+      {
+        className: 'color-5 opacity',
+        data: [
+          {
+            x                 : 100,
+            y                 : 23000000,
+            z                 : 200,
+            data_type         : 'comparison',
+            division          : 'active',
+            rank              : 'excellent',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '現役<br>優良';
+          }
+        }
+      },
+      {
+        className: 'color-6 opacity',
+        data: [
+          {
+            x                 : 120,
+            y                 : 35000000,
+            z                 : 100,
+            data_type         : 'comparison',
+            division          : 'withdrawal',
+            rank              : 'first',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '離脱<br>初回';
+          }
+        }
+      },
+      {
+        className: 'color-7 opacity',
+        data: [
+          {
+            x                 : 150,
+            y                 : 18000000,
+            z                 : 150,
+            data_type         : 'comparison',
+            division          : 'withdrawal',
+            rank              : 'little',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '離脱<br>よちよち';
+          }
+        }
+      },
+      {
+        className: 'color-8 opacity',
+        data: [
+          {
+            x                 : 230,
+            y                 : 45000000,
+            z                 : 50,
+            data_type         : 'comparison',
+            division          : 'withdrawal',
+            rank              : 'drudgery',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '離脱<br>こつこつ';
+          }
+        }
+      },
+      {
+        className: 'color-9 opacity',
+        data: [
+          {
+            x                 : 10,
+            y                 : 11000000,
+            z                 : 200,
+            data_type         : 'comparison',
+            division          : 'withdrawal',
+            rank              : 'trend',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '離脱<br>流行';
+          }
+        }
+      },
+      {
+        className: 'color-10 opacity',
+        data: [
+          {
+            x                 : 110,
+            y                 : 30000000,
+            z                 : 300,
+            data_type         : 'comparison',
+            division          : 'withdrawal',
+            rank              : 'excellent',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '離脱<br>優良';
+          }
+        }
+      },
+
+      // 目標データ -------------------------------------------------------------
+      {
+        className: 'color-1 opacity stroke',
+        data: [
+          {
+            x                 : 100,
+            y                 : 50000000,
+            z                 : 100,
+            data_type         : 'goal',
+            division          : 'active',
+            rank              : 'first',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '現役<br>初回<br>(目標)';
+          }
+        }
+      },
+      {
+        className: 'color-2 opacity stroke',
+        data: [
+          {
+            x                 : 50,
+            y                 : 10000000,
+            z                 : 400,
+            data_type         : 'goal',
+            division          : 'active',
+            rank              : 'little',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '現役<br>よちよち<br>(目標)';
+          }
+        }
+      },
+      {
+        className: 'color-3 opacity stroke',
+        data: [
+          {
+            x                 : 57,
+            y                 : 42000000,
+            z                 : 90,
+            data_type         : 'goal',
+            division          : 'active',
+            rank              : 'drudgery',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '現役<br>こつこつ<br>(目標)';
+          }
+        }
+      },
+      {
+        className: 'color-4 opacity stroke',
+        data: [
+          {
+            x                 : 130,
+            y                 : 36000000,
+            z                 : 100,
+            data_type         : 'goal',
+            division          : 'active',
+            rank              : 'trend',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '現役<br>流行<br>(目標)';
+          }
+        }
+      },
+      {
+        className: 'color-5 opacity stroke',
+        data: [
+          {
+            x                 : 10,
+            y                 : 30000000,
+            z                 : 100,
+            data_type         : 'goal',
+            division          : 'active',
+            rank              : 'excellent',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '現役<br>優良<br>(目標)';
+          }
+        }
+      },
+      {
+        className: 'color-6 opacity stroke',
+        data: [
+          {
+            x                 : 10,
+            y                 : 10000000,
+            z                 : 100,
+            data_type         : 'goal',
+            division          : 'withdrawal',
+            rank              : 'first',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '離脱<br>初回<br>(目標)';
+          }
+        }
+      },
+      {
+        className: 'color-7 opacity stroke',
+        data: [
+          {
+            x                 : 100,
+            y                 : 21000000,
+            z                 : 10,
+            data_type         : 'goal',
+            division          : 'withdrawal',
+            rank              : 'little',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '離脱<br>よちよち<br>(目標)';
+          }
+        }
+      },
+      {
+        className: 'color-8 opacity stroke',
+        data: [
+          {
+            x                 : 30,
+            y                 : 31000000,
+            z                 : 200,
+            data_type         : 'goal',
+            division          : 'withdrawal',
+            rank              : 'drudgery',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '離脱<br>こつこつ<br>(目標)';
+          }
+        }
+      },
+      {
+        className: 'color-9 opacity stroke',
+        data: [
+          {
+            x                 : 20,
+            y                 : 50000000,
+            z                 : 100,
+            data_type         : 'goal',
+            division          : 'withdrawal',
+            rank              : 'trend',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '離脱<br>流行<br>(目標)';
+          }
+        }
+      },
+      {
+        className: 'color-10 opacity stroke',
+        data: [
+          {
+            x                 : 160,
+            y                 : 43000000,
+            z                 : 200,
+            data_type         : 'goal',
+            division          : 'withdrawal',
+            rank              : 'excellent',
+            date              : '2017年6月',
+            y_average         : 900000,
+            withdrawal_period : 30
+          }
+        ],
+        dataLabels: {
+          enabled: true,
+          useHTML: true,
+          style: { width: '150px', color: '#000', lineHeight: 1.2  },
+          formatter: function() {
+            return '離脱<br>優良<br>(目標)';
+          }
+        }
+      }
+    ];
+  
+  function render(series) {
+    highcharts = Highcharts.chart('container', {
+      chart: {
+        type: 'bubble',
+        zoomType: 'xy'
+      },
+      navigator: { enabled: false },
+      credits: {
+        enabled: false
+      },
+      legend: {
+        enabled: false
+      },
+      xAxis: {
+        title: {
+          text: '在籍期間(日数)'
+        }
+      },
+      yAxis: {
+        lineWidth: 1,
+        tickWidth: 1,
+        title: {
+          text: '購入金額',
+          rotation: 0,
+          align: 'high',
+          offset: 0,
+          y: -10
+        }
+      },
+      title: {
+        text: 'CPM分析レポート'
+      },
+      series: series,
+      tooltip: {
+        formatter: function() {
+          var str = '期間: ' + this.point.date + '<br>';
+          str += '人数: ' + this.point.z + '人<br>';
+          str += '売上(合計): ' + numberFormat(this.point.y) + '<br>';
+          str += '売上(平均): ' + numberFormat(this.point.y_average) + '<br>';
+          str += '在籍期間(平均): ' + this.point.x + '<br>';
+          str += '離脱期間(平均): ' + this.point.withdrawal_period;
+          return str;
+        }
+      }
+    });
+  }
+
+  document.getElementById('btn').addEventListener('click', function() {
+    document.querySelector('.checkbox-container').classList.add('active');
+    render(all_series);
+  });
+
+  document.querySelectorAll('input').forEach(function(element) {
+    element.addEventListener('change', function() {
+      var top = window.pageYOffset || document.documentElement.scrollTop
+      setTimeout(function() {
+        window.scrollTo(0, top);
+      }, 0);
+      change();
+    })
+  });
+
+  // チェックボックスを変更したら
+  function change() {
+    var series;
+    var data = {};
+    
+    data.data_types = getData(data_types);
+    data.divisions = getData(divisions);
+    data.ranks = getData(ranks);
+    series = getSeries(data);
+
+    highcharts.destroy();
+    
+    document.getElementById('container').style.display = 'block'
+    if (!series.length) document.getElementById('container').style.display = 'none';
+    render(series);
+  }
+
+  // チェックボックスの該当のデータを返す
+  function getSeries(data) {
+    return all_series.filter(function(series) {
+      if (checkData(series.data[0].data_type, data.data_types) && checkData(series.data[0].division, data.divisions) && checkData(series.data[0].rank, data.ranks)) return true;
+      return false;
+    });
+  }
+
+  // 該当のデータがあるかチェック
+  function checkData(series, data) {
+    return data.some(function(value) {
+      if (series == value) return true;
+      return false;
+    });
+  }
+
+  // チェックされている項目を返す
+  function getData(elements) {
+    return Array.prototype.map.call(elements, function(element) {
+      if (element.checked) return element.value;
+      return null;
+    });
+  }
+
+  // 3桁カンマ区切り
+  function numberFormat(value) {
+    return String(value).replace(/(\d)(?=(\d\d\d)+(?!\d))/g, '$1,');
+  }
+})();
+</script>
+</body>
+</html>
